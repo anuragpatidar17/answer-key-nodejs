@@ -85,7 +85,7 @@ var con = mysql.createConnection({
     
      
             
-            var sql='SELECT name,password,department FROM admin WHERE email="'+email+'"'
+            var sql='SELECT name,password,department,email FROM admin WHERE email="'+email+'"'
             con.query(sql, function (err,result) {
                 if (result.length<1) {
                     //console.log(err);
@@ -106,6 +106,7 @@ var con = mysql.createConnection({
                 hashedPassword = result[0].password;	
                 name=result[0].name;
                 department=result[0].department;
+                email1=result[0].email;
                   Bcrypt.compare(password, hashedPassword, (err, result) => {
                       if (err) {
                          console.log('Bcrypt - error - ', err);
@@ -123,8 +124,8 @@ var con = mysql.createConnection({
                                        status:200,
                                        success:true,
                                       name:name,
-                                      department:department
-                    
+                                      department:department,
+                                      email:email1
                     
                                    })
                             
