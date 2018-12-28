@@ -89,7 +89,7 @@ input[type=submit]:hover {
 
 
 <div class="container">
-  <form action="/admin_login" method="post">
+  <form action="/admin_login" method="post"  onsubmit="submit()">
     
     <div class="row">
       <div class="col-25">
@@ -115,4 +115,30 @@ input[type=submit]:hover {
 </div>
 
 </body>
+
+
+
+<script>
+
+
+        function submit(){
+            var user;
+            
+            if(res.json().status==200)
+                        {
+                         let form={
+                           name:res.json().name,
+                           department:res.json().department,
+                          email:res.json().email
+                         }
+                        }
+            
+                         localStorage.setItem('user',JSON.stringify(form));
+        
+        }
+        
+            
+            </script>
+
 </html>
+

@@ -25,14 +25,11 @@ var con = mysql.createConnection({
     if (err) throw err;
     console.log("Connected!");})
 
-    app.get('/main',(req,res)=>{
-        res.sendfile(__dirname + "/main.html");
-    });
+    // app.get('/main',(req,res)=>{
+    //     res.sendfile(__dirname + "/main.html");
+    // })}
 
 
-    app.get('/admin_reg',(req,res)=>{
-        res.sendfile("./signup.html");
-    });
 
 
     app.post('/admin_reg',(req,res)=>{
@@ -66,16 +63,18 @@ var con = mysql.createConnection({
                 }
                 else 
                 {
-                    res.sendFile(__dirname + "/login.html");
+                    res.json({
+                        status:200,
+                        success:true
+     
+                    })
                    
                 console.log("1 record inserted");}
               });
              
             }})});
     
-    app.get('/admin_login',(req,res)=>{
-        res.sendfile("./login.html");
-    });
+
     app.post('/admin_login',(req,res)=>{
         const email=req.body.email
         const password=req.body.password
@@ -83,8 +82,10 @@ var con = mysql.createConnection({
      var name;
     
      var department;
+    
      
-            var sql='SELECT name,password,department FROM admin WHERE email="'+email+'"'
+            
+            var sql='SELECT name,password,department,email FROM admin WHERE email="'+email+'"'
             con.query(sql, function (err,result) {
                 if (result.length<1) {
                     //console.log(err);
@@ -105,6 +106,7 @@ var con = mysql.createConnection({
                 hashedPassword = result[0].password;	
                 name=result[0].name;
                 department=result[0].department;
+                email1=result[0].email;
                   Bcrypt.compare(password, hashedPassword, (err, result) => {
                       if (err) {
                          console.log('Bcrypt - error - ', err);
@@ -117,8 +119,16 @@ var con = mysql.createConnection({
                          console.log('Bcrypt - result - ', result);
                          if(result==true){
                         // res.status(200);
-                          res.sendFile(__dirname + "/subject.html");
-
+            
+                                   res.json({
+                                       status:200,
+                                       success:true,
+                                      name:name,
+                                      department:department,
+                                      email:email1
+                    
+                                   })
+                            
                          }
                          else {
                            //res.status(400);
@@ -128,23 +138,58 @@ var con = mysql.createConnection({
                            })
                          }
                       }})}}
-   })});
-   
-   app.get('/subjectshow',(req,res)=>{
-    res.sendfile("./subject.html");
+                     
+   })
+
 });
 
-    app.get('/update',(req,res)=>{
-        res.sendfile("./upload.html");
-    });
+app.post('/details',(req,res)=>{
+   var match;
+   res.json(match);
+    console.log(match);
+con.connect(function(err){
+var sql='SELECT name FROM admin WHERE email="'+match+'"' 
+con.query(sql,function(err,result){
+    if (err) {
+        console.log(err);}
+        else{
+       console.log(result);
+       res.json(result);
+        }
+})
+})
+
+})
+   
+
+app.post('/question',(req,res)=>{
+   
+    const uid=req.body.uid;
+    const subject_code=req.body.subject_code
+    console.log(uid);
+con.connect(function(err){
+var sql='SELECT * FROM '+subject_code+' WHERE uid="'+uid+'"' 
+con.query(sql,function(err,result){
+    if (err) {
+        console.log(err);}
+        else{
+       console.log(result);
+       res.json(result);
+        }
+})
+})
+
+})
+
     app.post('/update',(req,res)=>{
 
         const uid=req.body.uid
         const question=req.body.question
         const answer=req.body.answer
-        res.send(question+answer);
+        subject_code=req.body.subject_code
+        //res.send(question+answer);
       
-        var sql='INSERT INTO 15ee208 (uid,question,answer) VALUES ("'+uid+'","'+question+'","'+answer+'")'
+        var sql='INSERT INTO '+subject_code+' (uid,question,answer,subject_code) VALUES ("'+uid+'","'+question+'","'+answer+'","'+subject_code+'")'
             con.query(sql, function (err, result) {
                 if (err){
                     console.log(err);
@@ -163,9 +208,30 @@ var con = mysql.createConnection({
               });});
 
 
-              app.get('/showsub',(req,res)=>{
-                res.sendfile("./index2.html");
-            });
+              app.post('/edit_subject',(req,res)=>{
+                const id=req.body.id
+                const uid=req.body.uid
+                const question=req.body.question
+                const answer=req.body.answer
+             const subject_code=req.body.subject_code
+        
+                var sql='UPDATE '+subject_code+' SET uid ="'+uid+'" , question = "'+question+'", answer = "'+answer+'"  WHERE id="'+id+'"'
+                    con.query(sql, function (err, result) {
+                        if (err){
+                            console.log(err);
+                            res.json({
+                                success:false,
+                                status:400
+                            })
+                        }
+                        else
+                        {
+                            res.json({
+                                success:true,
+                                status:200
+                            })
+                        console.log("1 record updated");}
+                      });});
 
               app.get('/subjects',(req,res)=>{
                 var sql='SELECT * FROM subject'
@@ -181,5 +247,73 @@ var con = mysql.createConnection({
 
 
 
+        app.post('/previousedit',(req,res)=>{
+const subject_code=req.body.subject_code
+const id=req.body.id
+            var sql='SELECT * FROM '+subject_code+' WHERE id='+id+''
+            con.query(sql, function (err,result) {
+                if (err) {
+                    console.log(err);}
+                    else{
+                   console.log(result);
+                   res.json(result);
+                    }
+        })
+    })
+
+
+
+
+        app.post('/new_subject',function(req,res){
+            const subject_code=req.body.subject_code
+            const subject_name=req.body.subject_name
+            console.log(subject_code,subject_name)
+            var sql='CREATE TABLE '+subject_code+'  (id INT NOT NULL AUTO_INCREMENT, uid INT(10), question VARCHAR(255), answer VARCHAR(255),subject_code VARCHAR(255), PRIMARY KEY(id))';
+            con.query(sql,(err,result)=>{
+                if(err){
+                    console.log(err)
+                }
+                else{
+                    console.log(subject_code+" "+"table created");
+                   var sql1='INSERT INTO subject (subject_code,name) VALUES ("'+subject_code+'","'+subject_name+'")'
+                   con.query(sql1,(err,result)=>{
+                       if (err)
+                       console.log(err)
+                       else{
+             console.log("subject inserted")
+                       }
+                   })
+                   
+                }
+            })
+            })  
+
+       
+            app.post('/edit_subject',(req,res)=>{
+                const id=req.body.id
+                const uid=req.body.uid
+                const question=req.body.question
+                const answer=req.body.answer
+             const subject_code=req.body.subject_code
+        
+                var sql='UPDATE '+subject_code+' SET uid ="'+uid+'" , question = "'+question+'", answer = "'+answer+'"  WHERE id="'+id+'"'
+                    con.query(sql, function (err, result) {
+                        if (err){
+                            console.log(err);
+                            res.json({
+                                success:false,
+                                status:400
+                            })
+                        }
+                        else
+                        {
+                            res.json({
+                                success:true,
+                                status:200
+                            })
+                        console.log("1 record updated");}
+                      });});
+            
+            
 
     app.listen(process.env.PORT||9000);
