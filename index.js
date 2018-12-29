@@ -6,7 +6,11 @@ var mysql = require('mysql');
 var cors = require('cors');//cross origin resource sharing enables ionic to communicate with server
 var Bcrypt = require('bcrypt');
 var http = require('http');
+
+var jwt = require('jsonwebtoken');
 var app = express();
+
+
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
@@ -19,7 +23,7 @@ var con = mysql.createConnection({
    database:"myanswer",
  
   });
-
+ 
 
   con.connect(function(err) {
     if (err) throw err;
@@ -29,6 +33,7 @@ var con = mysql.createConnection({
     //     res.sendfile(__dirname + "/main.html");
     // })}
 
+  
 
 
 
@@ -118,16 +123,18 @@ var con = mysql.createConnection({
                       } else {
                          console.log('Bcrypt - result - ', result);
                          if(result==true){
-                        // res.status(200);
-            
-                                   res.json({
-                                       status:200,
-                                       success:true,
-                                      name:name,
-                                      department:department,
-                                      email:email1
-                    
-                                   })
+                       const token = jwt.sign({'email': email, 'password': password}, '123456', { expiresIn: '1h'} ,(err,token) => {
+                            res.json({
+                                token,
+                                status:200,
+                                success:true,
+                               name:name,
+                               department:department,
+                               email:email1
+                               
+                            });
+                            
+                        }) 
                             
                          }
                          else {
@@ -181,7 +188,18 @@ con.query(sql,function(err,result){
 
 })
 
-    app.post('/update',(req,res)=>{
+    app.post('/update',verifyToken,(req,res)=>{
+        jwt.verify(req.token, '123456', (err, authData) => {
+            if(err){
+                res.sendStatus(403);
+            } else{
+                res.json({
+                    message :'ok',
+                   
+                     authData
+                })
+            }
+        })
 
         const uid=req.body.uid
         const question=req.body.question
@@ -233,7 +251,10 @@ con.query(sql,function(err,result){
                         console.log("1 record updated");}
                       });});
 
-              app.get('/subjects',(req,res)=>{
+              app.get('/subjects', (req,res)=>{
+                  
+
+
                 var sql='SELECT * FROM subject'
                 con.query(sql, function (err,result) {
                     if (err) {
@@ -314,6 +335,25 @@ const id=req.body.id
                         console.log("1 record updated");}
                       });});
             
-            
+
+function verifyToken(req,res,next) {
+    const checktoken = req.headers['authorization'];
+
+    if(typeof checktoken !== 'undefined'){
+
+        const splittoken = checktoken.split(' ');
+
+        const collecttoken = splittoken[1];
+        req.token = collecttoken;
+
+        next();
+
+    } else{
+        res.sendStatus(403);
+    }
+}
+
+
+
 
     app.listen(process.env.PORT||9000);
