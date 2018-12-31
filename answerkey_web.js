@@ -5,7 +5,7 @@ var methodOverride = require('method-override')//allows to use put and delete re
 var mysql = require('mysql');
 var cors = require('cors');//cross origin resource sharing enables ionic to communicate with server
 var Bcrypt = require('bcrypt');
-var http = require('http');
+var jwt = require('jsonwebtoken');
 var app = express();
 app.use(logger('dev'));
 app.use(bodyParser.json());
@@ -15,11 +15,12 @@ app.use(cors());
 var con = mysql.createConnection({
     host: "localhost",
     user: "root",
-    password:"gaurav123",
+    password:"",
    database:"myanswer",
  
   });
-
+var secret="123456"
+var exp_time=3600
 
   con.connect(function(err) {
     if (err) throw err;
@@ -91,7 +92,8 @@ var con = mysql.createConnection({
                     //console.log(err);
                     res.json({
                         status:404,
-                        success:false
+                        success:false,
+                        token:null
                     })
                  }
                  else {
@@ -99,7 +101,8 @@ var con = mysql.createConnection({
                      {
                      res.json({
                         status:400,
-                        success:false
+                        success:false,
+                        token:null
                      })
                     }
                     else{
@@ -113,11 +116,13 @@ var con = mysql.createConnection({
                          //res.status(400);
                          res.json({
                              status:400,
-                             success:false
+                             success:false,
+                             token:null
                          })
                       } else {
                          console.log('Bcrypt - result - ', result);
                          if(result==true){
+                        jwt.sign({'email': email, 'department': department},secret, { expiresIn: exp_time} ,(err,token) => {
                         // res.status(200);
             
                                    res.json({
@@ -125,16 +130,17 @@ var con = mysql.createConnection({
                                        success:true,
                                       name:name,
                                       department:department,
-                                      email:email1
-                    
+                                      email:email1,
+                                      token:token
                                    })
                             
-                         }
+                         })}
                          else {
                            //res.status(400);
                            res.json({
                                status:400,
-                               success:false
+                               success:false,
+                               token:null
                            })
                          }
                       }})}}
@@ -143,23 +149,23 @@ var con = mysql.createConnection({
 
 });
 
-app.post('/details',(req,res)=>{
-   var match;
-   res.json(match);
-    console.log(match);
-con.connect(function(err){
-var sql='SELECT name FROM admin WHERE email="'+match+'"' 
-con.query(sql,function(err,result){
-    if (err) {
-        console.log(err);}
-        else{
-       console.log(result);
-       res.json(result);
-        }
-})
-})
+// app.post('/details',(req,res)=>{
+//    var match;
+//    res.json(match);
+//     console.log(match);
+// con.connect(function(err){
+// var sql='SELECT name FROM admin WHERE email="'+match+'"' 
+// con.query(sql,function(err,result){
+//     if (err) {
+//         console.log(err);}
+//         else{
+//        console.log(result);
+//        res.json(result);
+//         }
+// })
+// })
 
-})
+// })
    
 
 app.post('/question',(req,res)=>{
@@ -167,6 +173,27 @@ app.post('/question',(req,res)=>{
     const uid=req.body.uid;
     const subject_code=req.body.subject_code
     console.log(uid);
+    var token=req.body.token
+    if(token==null||token==undefined){
+        res.json({
+            status:401,
+            success:false,
+            message:"Unauthorized access"
+        })
+    }
+    else{
+  jwt.verify(token,secret,(err, decoded) => {
+      if(err){
+          console.log(decoded);
+          res.json({
+              status:500,
+              success:false,
+              message:"Failed to authenticate token"
+          })
+      }
+//console.log(decoded);
+else{
+ console.log(decoded)
 con.connect(function(err){
 var sql='SELECT * FROM '+subject_code+' WHERE uid="'+uid+'"' 
 con.query(sql,function(err,result){
@@ -178,9 +205,7 @@ con.query(sql,function(err,result){
         }
 })
 })
-
-})
-
+}})}});
     app.post('/update',(req,res)=>{
 
         const uid=req.body.uid
@@ -188,6 +213,27 @@ con.query(sql,function(err,result){
         const answer=req.body.answer
         subject_code=req.body.subject_code
         //res.send(question+answer);
+        var token=req.body.token
+        if(req.body.token=null||req.body.token==undefined){
+            res.json({
+                status:401,
+                success:false,
+                message:"Unauthorized access"
+            })
+        }
+        else{
+      jwt.verify(token,secret,(err, decoded) => {
+          if(err){
+              console.log(decoded);
+              res.json({
+                  status:500,
+                  success:false,
+                  message:"Failed to authenticate token"
+              })
+          }
+ //console.log(decoded);
+ else{
+     console.log(decoded)
       
         var sql='INSERT INTO '+subject_code+' (uid,question,answer,subject_code) VALUES ("'+uid+'","'+question+'","'+answer+'","'+subject_code+'")'
             con.query(sql, function (err, result) {
@@ -205,9 +251,31 @@ con.query(sql,function(err,result){
                         status:200
                     })
                 console.log("1 record inserted");}
-              });});
+              })}})}});
 
-              app.get('/subjects',(req,res)=>{
+              app.post('/subjects',(req,res)=>{
+                  console.log(req.body.token);
+                  var token=req.body.token
+                  if(req.body.token=null||req.body.token==undefined){
+                      res.json({
+                          status:401,
+                          success:false,
+                          message:"Unauthorized access"
+                      })
+                  }
+                  else{
+                jwt.verify(token,secret,(err, decoded) => {
+                    if(err){
+                        console.log(decoded);
+                        res.json({
+                            status:500,
+                            success:false,
+                            message:"Failed to authenticate token"
+                        })
+                    }
+           //console.log(decoded);
+           else{
+               console.log(decoded)
                 var sql='SELECT * FROM subject'
                 con.query(sql, function (err,result) {
                     if (err) {
@@ -217,32 +285,178 @@ con.query(sql,function(err,result){
                        res.json(result);
                         }
             })
-        })
-        app.post('/new_subject',function(req,res){
-            const subject_code=req.body.subject_code
-            const subject_name=req.body.subject_name
-            console.log(subject_code,subject_name)
-            var sql='CREATE TABLE '+subject_code+'  (id INT NOT NULL AUTO_INCREMENT, uid INT(10), question VARCHAR(255), answer VARCHAR(255),subject_code VARCHAR(255), PRIMARY KEY(id))';
-            con.query(sql,(err,result)=>{
-                if(err){
-                    console.log(err)
-                }
-                else{
-                    console.log(subject_code+" "+"table created");
-                   var sql1='INSERT INTO subject (subject_code,name) VALUES ("'+subject_code+'","'+subject_name+'")'
-                   con.query(sql1,(err,result)=>{
-                       if (err)
-                       console.log(err)
-                       else{
-             console.log("subject inserted")
-                       }
-                   })
-                   
-                }
-            })
-            })  
-
-       
+        }
+}
+    )}});
+        
             
+                    app.post('/new_subject',function(req,res){
+                        const subject_code=req.body.subject_code
+                        const subject_name=req.body.subject_name
+                        console.log(subject_code,subject_name)
+
+                        var sql='CREATE TABLE '+subject_code+'  (id INT NOT NULL AUTO_INCREMENT, uid INT(10), question VARCHAR(255), answer VARCHAR(255),subject_code VARCHAR(255), PRIMARY KEY(id))';
+                        con.query(sql,(err,result)=>{
+                            if(err){
+                                console.log(err)
+                            }
+                            else{
+                                console.log(subject_code+" "+"table created");
+                               var sql1='INSERT INTO subject (subject_code,name) VALUES ("'+subject_code+'","'+subject_name+'")'
+                               con.query(sql1,(err,result)=>{
+                                   if (err)
+                                   console.log(err)
+                                   else{
+                         console.log("subject inserted")
+                                   }
+                               })
+                               
+                            }
+                        })
+                        });  
+            
+
+// app.post('/edit_subject',(req,res)=>{
+// const id=req.body.id
+// const uid=req.body.uid
+// const question=req.body.question
+// const answer=req.body.answer
+// const subject_code=req.body.subject_code
+// var token=req.body.token
+// if(token=null||token==undefined){
+//     res.json({
+//         status:401,
+//         success:false,
+//         message:"Unauthorized access"
+//     })
+// }
+// else{
+// jwt.verify(token,secret,(err, decoded) => {
+//   if(err){
+//       console.log(decoded);
+//       res.json({
+//           status:500,
+//           success:false,
+//           message:"Failed to authenticate token"
+//       })
+//   }
+// //console.log(decoded);
+// else{
+// console.log(decoded)
+// var sql='UPDATE '+subject_code+' SET uid ="'+uid+'" , question = "'+question+'", answer = "'+answer+'"  WHERE id="'+id+'"'
+// con.query(sql, function (err, result) {
+// if (err){
+// console.log(err);
+// res.json({
+// success:false,
+// status:400
+// })
+// }
+// else
+// {
+// res.json({
+// success:true,
+// status:200
+// })
+// console.log("1 record updated");}
+// });}})}});
+
+app.post('/edit_subject',(req,res)=>{
+    const id=req.body.id
+    const uid=req.body.uid
+    const question=req.body.question
+    const answer=req.body.answer
+    const subject_code=req.body.subject_code
+    var token=req.body.token
+    if(req.body.token=null||req.body.token==undefined){
+        res.json({
+            status:401,
+            success:false,
+            message:"Unauthorized access"
+        })
+    }
+    else{
+  jwt.verify(token,secret,(err, decoded) => {
+      if(err){
+          console.log(decoded);
+          res.json({
+              status:500,
+              success:false,
+              message:"Failed to authenticate token"
+          })
+      }
+//console.log(decoded);
+else{
+    var sql='UPDATE '+subject_code+' SET uid ="'+uid+'" , question = "'+question+'", answer = "'+answer+'"  WHERE id="'+id+'"'
+    con.query(sql, function (err, result) {
+    if (err){
+    console.log(err);
+    res.json({
+    success:false,
+    status:400
+    })
+    }
+    else
+    {
+    res.json({
+    success:true,
+    status:200
+    })
+    console.log("1 record updated");}
+    }) 
+}
+}
+)}});
+      
+
+
+
+
+app.post('/previousedit',(req,res)=>{
+    const subject_code=req.body.subject_code
+const id=req.body.id
+const token=req.body.token
+    if(req.body.token=null||req.body.token==undefined){
+        res.json({
+            status:401,
+            success:false,
+            message:"Unauthorized access"
+        })
+    }
+    else{
+  jwt.verify(token,secret,(err, decoded) => {
+      if(err){
+          console.log(decoded);
+          res.json({
+              status:500,
+              success:false,
+              message:"Failed to authenticate token"
+          })
+      }
+//console.log(decoded);
+else{
+    var sql='SELECT * FROM '+subject_code+' WHERE id='+id+''
+    con.query(sql, function (err,result) {
+    if (err) {
+        console.log(err);}
+        else{
+        console.log(result);
+        res.json(result);
+        }
+    })
+}
+}
+)}});
+
+
+
+
+
+
+
+
+
+
+
 
     app.listen(process.env.PORT||9000);
