@@ -6,7 +6,7 @@ const config={
    database:"myanswer",
  },
  port:{
-   port:9000
+   port:7777
  }
 }
 module.exports= config;

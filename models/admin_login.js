@@ -2,7 +2,7 @@ var db=require('./db')
 var Bcrypt = require('bcrypt');
 var jwt=require("jsonwebtoken");
 var secret="123456"
-var exp_time=3600
+var exp_time=360000
 module.exports=(req,res)=>{
 const email=req.body.email
 const password=req.body.password

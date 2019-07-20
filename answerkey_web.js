@@ -24,7 +24,6 @@ var new_subject = require('./models/new_subject')
 
 app.route('/admin_reg').post(register)
 
-    
 app.route('/admin_login').post(login)
 
 app.route('/question').post(questions)

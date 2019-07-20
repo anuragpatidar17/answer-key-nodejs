@@ -2,7 +2,7 @@ var db=require('./db')
 var jwt=require("jsonwebtoken");
 var secret="123456";
 var exp_time=3600;
-module.exports=(req,res)=>{
+module.exports= (req,res)=>{
 
 const uid=req.body.uid
 const question=req.body.question
